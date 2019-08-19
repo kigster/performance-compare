@@ -1,0 +1,44 @@
+#!/usr/bin/env ruby
+#
+# coding: utf-8
+# frozen_string_literal: true
+#
+# Created by Konstantin Gredeskoul
+#
+# LICENSE: MIT
+#
+
+# lib = File.expand_path('../lib', __dir__)
+# $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+
+require 'bundler/setup'
+require 'performance/compare'
+require 'algorithms/sha1sum'
+
+# TODO: make these switchable options
+
+if ARGV.empty?
+  puts "usage: #{$0} N1 N2 ..."
+  puts 'where N1, N2, etc. are the number of iterations per algorithm.'
+  puts 'Try values from 5,000 to 50,000'
+  exit 0
+end
+
+NUMBER_OF_ITERATIONS = ARGV.map(&:to_i)
+
+NUMBER_OF_CORES = Etc.nprocessors
+
+TEST_MATRIX = {
+  threads:   [1, NUMBER_OF_CORES],
+  processes: [1, NUMBER_OF_CORES],
+}
+
+begin
+  Performance::Compare::TestRunner.new(iterations:  NUMBER_OF_ITERATIONS,
+                                       test_matrix: TEST_MATRIX,
+                                       algorithms:  [Algorithms::Sha1Sum::Ruby,
+                                                     Algorithms::Sha1Sum::Fork],
+                                       method:      :sha1sum).run
+rescue StandardError => e
+  $stderr.puts e.message
+end
